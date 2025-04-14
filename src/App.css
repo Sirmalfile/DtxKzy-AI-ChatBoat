@@ -1,0 +1,10 @@
+/* You can keep this minimal or remove if not needed */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Smooth scrolling for chat container */
+.chat-container {
+  scroll-behavior: smooth;
+}
