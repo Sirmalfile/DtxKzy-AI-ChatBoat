@@ -5,12 +5,14 @@ import PromptArea from './components/PromptArea';
 import ThemeToggle from './components/ThemeToggle';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
+import ForgotPassword from './components/Auth/ForgotPassword';
 import ProfileButton from './components/ProfileButton';
 import { 
   auth, 
   db,
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
   doc,
@@ -30,7 +32,7 @@ function App() {
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [theme, setTheme] = useState('dark');
-  const [authView, setAuthView] = useState('login'); // 'login', 'signup', or 'chat'
+  const [authView, setAuthView] = useState('login'); // 'login', 'signup', 'forgot', or 'chat'
   const [user, setUser] = useState(null);
   const [authError, setAuthError] = useState('');
   const fileInputRef = useRef(null);
@@ -72,7 +74,7 @@ function App() {
       } else {
         // No user is signed in - ensure we're on login page
         setUser(null);
-        if (authView !== 'login' && authView !== 'signup') {
+        if (authView !== 'login' && authView !== 'signup' && authView !== 'forgot') {
           setAuthView('login');
         }
       }
@@ -85,6 +87,7 @@ function App() {
 
   const handleLogin = async (email, password) => {
     setAuthError('');
+    setIsTyping(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
@@ -101,14 +104,15 @@ function App() {
     } catch (error) {
       console.error("Login error:", error);
       setAuthError(error.message || 'Login failed. Please try again.');
+    } finally {
+      setIsTyping(false);
     }
   };
 
   const handleSignup = async (name, email, password) => {
     setAuthError('');
+    setIsTyping(true);
     try {
-      setIsTyping(true); // Show loading state
-      
       // 1. Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
@@ -135,6 +139,21 @@ function App() {
       if (auth.currentUser) {
         await signOut(auth);
       }
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleResetPassword = async (email) => {
+    setAuthError('');
+    setIsTyping(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setAuthError('Password reset email sent. Please check your inbox.');
+      setAuthView('login');
+    } catch (error) {
+      console.error("Password reset error:", error);
+      setAuthError(error.message || 'Failed to send reset email. Please try again.');
     } finally {
       setIsTyping(false);
     }
@@ -228,29 +247,27 @@ function App() {
     reader.readAsDataURL(file);
   };
 
-  // Add this new function to handle PDF uploads
-const handlePdfUpload = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const handlePdfUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  // Check if file is PDF
-  if (file.type !== 'application/pdf') {
-    setAuthError('Please upload a PDF file');
-    return;
-  }
+    // Check if file is PDF
+    if (file.type !== 'application/pdf') {
+      setAuthError('Please upload a PDF file');
+      return;
+    }
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const base64string = e.target.result.split(",")[1];
-    handleSendMessage('Analyze this PDF:', {
-      mimeType: file.type,
-      base64: base64string,
-      fileName: file.name
-    });
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64string = e.target.result.split(",")[1];
+      handleSendMessage('Analyze this PDF:', {
+        mimeType: file.type,
+        base64: base64string,
+        fileName: file.name
+      });
+    };
+    reader.readAsDataURL(file);
   };
-  reader.readAsDataURL(file);
-};
-
 
   return (
     <div className={`flex flex-col h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -273,39 +290,59 @@ const handlePdfUpload = (e) => {
           />
           
           <PromptArea 
-  onSendMessage={handleSendMessage} 
-  onImageUpload={handleImageUpload}
-  onPdfUpload={handlePdfUpload}  // Add this new prop
-  fileInputRef={fileInputRef}
-  isTyping={isTyping}
-  theme={theme}
-/>
+            onSendMessage={handleSendMessage} 
+            onImageUpload={handleImageUpload}
+            onPdfUpload={handlePdfUpload}
+            fileInputRef={fileInputRef}
+            isTyping={isTyping}
+            theme={theme}
+          />
         </>
       ) : (
         <div className="flex items-center justify-center h-full p-4">
-          {authView === 'login' ? (
-  <Login 
-    onLogin={handleLogin} 
-    onSwitchToSignup={() => {
-      setAuthView('signup');
-      setAuthError('');
-    }} 
-    theme={theme}
-    error={authError}
-    isLoading={isTyping}
-  />
-) : (
-  <Signup 
-    onSignup={handleSignup} 
-    onSwitchToLogin={() => {
-      setAuthView('login');
-      setAuthError('');
-    }} 
-    theme={theme}
-    error={authError}
-    isLoading={isTyping}
-  />
-)}
+          <AnimatePresence mode="wait">
+            {authView === 'login' ? (
+              <Login 
+                key="login"
+                onLogin={handleLogin} 
+                onSwitchToSignup={() => {
+                  setAuthView('signup');
+                  setAuthError('');
+                }}
+                onForgotPassword={() => {
+                  setAuthView('forgot');
+                  setAuthError('');
+                }}
+                theme={theme}
+                error={authError}
+                isLoading={isTyping}
+              />
+            ) : authView === 'signup' ? (
+              <Signup 
+                key="signup"
+                onSignup={handleSignup} 
+                onSwitchToLogin={() => {
+                  setAuthView('login');
+                  setAuthError('');
+                }} 
+                theme={theme}
+                error={authError}
+                isLoading={isTyping}
+              />
+            ) : (
+              <ForgotPassword 
+                key="forgot"
+                onResetPassword={handleResetPassword}
+                onBackToLogin={() => {
+                  setAuthView('login');
+                  setAuthError('');
+                }}
+                theme={theme}
+                error={authError}
+                isLoading={isTyping}
+              />
+            )}
+          </AnimatePresence>
         </div>
       )}
     </div>

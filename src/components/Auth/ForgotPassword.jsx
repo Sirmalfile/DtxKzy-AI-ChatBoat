@@ -1,17 +1,16 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
+import { FiMail, FiArrowLeft, FiArrowRight } from 'react-icons/fi';
 
-const Login = ({ onLogin, onSwitchToSignup, onForgotPassword, theme, error, isLoading }) => {
+const ForgotPassword = ({ onResetPassword, onBackToLogin, theme, error, isLoading }) => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!email) {
       return;
     }
-    onLogin(email, password);
+    onResetPassword(email);
   };
 
   return (
@@ -22,7 +21,7 @@ const Login = ({ onLogin, onSwitchToSignup, onForgotPassword, theme, error, isLo
       className={`p-8 rounded-2xl shadow-lg max-w-md w-full ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
     >
       <h2 className="text-2xl font-bold mb-6 text-center bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-        Welcome Back
+        Reset Password
       </h2>
       
       {error && (
@@ -40,32 +39,12 @@ const Login = ({ onLogin, onSwitchToSignup, onForgotPassword, theme, error, isLo
           <FiMail className={`mr-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={`w-full bg-transparent focus:outline-none ${theme === 'dark' ? 'text-white placeholder-gray-400' : 'text-gray-800 placeholder-gray-500'}`}
+            required
           />
-        </div>
-        
-        <div className={`flex items-center p-3 rounded-lg border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-          <FiLock className={`mr-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`w-full bg-transparent focus:outline-none ${theme === 'dark' ? 'text-white placeholder-gray-400' : 'text-gray-800 placeholder-gray-500'}`}
-          />
-        </div>
-        
-        <div className="text-right">
-          <button 
-            type="button"
-            onClick={onForgotPassword}
-            className={`text-sm ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
-          >
-            Forgot password?
-          </button>
         </div>
         
         <motion.button
@@ -75,20 +54,20 @@ const Login = ({ onLogin, onSwitchToSignup, onForgotPassword, theme, error, isLo
           disabled={isLoading}
           className={`w-full py-3 px-4 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium flex items-center justify-center ${isLoading ? 'opacity-70' : ''}`}
         >
-          {isLoading ? 'Logging in...' : 'Login'} <FiArrowRight className="ml-2" />
+          {isLoading ? 'Sending...' : 'Reset Password'} <FiArrowRight className="ml-2" />
         </motion.button>
       </form>
       
       <div className="mt-4 text-center">
         <button 
-          onClick={onSwitchToSignup}
-          className={`text-sm ${theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`}
+          onClick={onBackToLogin}
+          className={`text-sm flex items-center justify-center mx-auto ${theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`}
         >
-          Don't have an account? Sign up
+          <FiArrowLeft className="mr-1" /> Back to Login
         </button>
       </div>
     </motion.div>
   );
 };
 
-export default Login;
+export default ForgotPassword;
